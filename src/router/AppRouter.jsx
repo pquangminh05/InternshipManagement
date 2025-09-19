@@ -7,9 +7,11 @@ import Dashboard from "../pages/dashboard/Index";
 import InternshipList from "../pages/internships/InternshipList";
 import StudentList from "../pages/students/StudentList";
 import CompanyList from "../pages/companies/CompanyList";
+import Users from "../pages/admin/Users";
+import Permissions from "../pages/admin/Permissions";
 
 // Layout & Guards
-import Layout from "../components/layout/Layout";
+import AppLayout from "../components/layout/Layout"; // 👈 đổi tên import
 import ProtectedRoute from "../components/layout/ProtectedRoute";
 import RoleGuard from "../components/layout/RoleGuard";
 
@@ -23,7 +25,9 @@ export default function AppRouter() {
 
         {/* Private */}
         <Route element={<ProtectedRoute />}>
-          <Route element={<Layout />}>
+          <Route element={<AppLayout />}>
+            {" "}
+            {/* 👈 dùng AppLayout */}
             <Route path="/" element={<Dashboard />} />
             <Route
               path="/internships"
@@ -46,6 +50,22 @@ export default function AppRouter() {
               element={
                 <RoleGuard roles={["HR", "ADMIN"]}>
                   <CompanyList />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <RoleGuard roles={["ADMIN"]}>
+                  <Users />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/admin/permissions"
+              element={
+                <RoleGuard roles={["ADMIN"]}>
+                  <Permissions />
                 </RoleGuard>
               }
             />
