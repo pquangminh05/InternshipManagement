@@ -8,7 +8,7 @@ export default function Login() {
 
   function onSubmit(e) {
     e.preventDefault();
-    // Tạm thời chỉ điều hướng để test UI + router
+    // Tạm thời chỉ điều hướng về dashboard để test
     navigate("/");
   }
 
@@ -32,6 +32,7 @@ export default function Login() {
         }}
       >
         <h1 style={{ fontSize: 22, marginBottom: 12 }}>Đăng nhập</h1>
+
         <label style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
           Email
         </label>
@@ -47,6 +48,7 @@ export default function Login() {
             marginBottom: 12,
           }}
         />
+
         <label style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
           Mật khẩu
         </label>
@@ -63,6 +65,7 @@ export default function Login() {
             marginBottom: 16,
           }}
         />
+
         <button
           type="submit"
           style={{
