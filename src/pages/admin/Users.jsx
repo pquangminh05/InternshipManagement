@@ -4,10 +4,11 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  sendActivation,
 } from "../../services/adminService";
 
 const ROLES = ["ADMIN", "HR", "MENTOR", "INTERN"];
-const STATUSES = ["ACTIVE", "PENDING", "DISABLED"];
+const STATUSES = ["ACTIVE", "PENDING", "INACTIVE"];
 
 export default function Users() {
   const [q, setQ] = useState("");
@@ -17,6 +18,7 @@ export default function Users() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
+  const [sendingEmail, setSendingEmail] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [err, setErr] = useState("");
 
@@ -24,37 +26,30 @@ export default function Users() {
     setLoading(true);
     setErr("");
     try {
-      const { content, total } = await getUsers({
-        q,
-        role: filterRole,
-        status: filterStatus,
+      const { content, total } = await getUsers({ 
+        q, 
+        role: filterRole, 
+        status: filterStatus 
       });
       setItems(content || []);
       setTotal(total || 0);
     } catch (e) {
-      setErr(
-        e?.response?.data?.message || "Không tải được danh sách người dùng."
-      );
+      setErr(e?.response?.data?.message || "Không tải được danh sách.");
     } finally {
       setLoading(false);
     }
   }
+
   useEffect(() => {
-    load(); /* eslint-disable-next-line */
+    load();
   }, [q, filterRole, filterStatus]);
 
-  async function onInlineChange(u, field, value) {
-    setSavingId(u.id);
+  async function onUpdateUser(id, field, value) {
+    setSavingId(id);
     try {
-      await updateUser({
-        id: u.id,
-        fullName: field === "fullName" ? value : u.fullName,
-        role: field === "role" ? value : u.role,
-        status: field === "status" ? value : u.status,
-      });
-      setItems((prev) =>
-        prev.map((x) => (x.id === u.id ? { ...x, [field]: value } : x))
-      );
+      const user = items.find(u => u.id === id);
+      await updateUser({ ...user, [field]: value });
+      setItems(prev => prev.map(u => u.id === id ? { ...u, [field]: value } : u));
     } catch (e) {
       alert(e?.response?.data?.message || "Cập nhật thất bại");
     } finally {
@@ -64,7 +59,15 @@ export default function Users() {
 
   async function onCreate(data) {
     try {
-      await createUser(data);
+      const user = await createUser(data);
+      if (
+        confirm("Tạo thành công. Gửi email kích hoạt cho người dùng này ngay?")
+      ) {
+        setSendingEmail(user.email);
+        await sendActivation(user.email);
+        setSendingEmail(null);
+        alert("Đã gửi email kích hoạt.");
+      }
       setShowCreate(false);
       await load();
     } catch (e) {
@@ -72,10 +75,26 @@ export default function Users() {
     }
   }
 
+  async function onSendActivation(email) {
+    try {
+      setSendingEmail(email);
+      await sendActivation(email);
+      alert("Đã gửi email kích hoạt.");
+    } catch (e) {
+      alert(e?.response?.data?.message || "Gửi email thất bại");
+    } finally {
+      setSendingEmail(null);
+    }
+  }
+
   async function onDelete(id) {
-    if (!confirm("Xoá người dùng này?")) return;
-    await deleteUser(id);
-    await load();
+    if (!confirm("Xác nhận xóa người dùng này?")) return;
+    try {
+      await deleteUser(id);
+      await load();
+    } catch (e) {
+      alert(e?.response?.data?.message || "Xóa thất bại");
+    }
   }
 
   return (
@@ -83,13 +102,10 @@ export default function Users() {
       <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>
         Quản lý người dùng
       </h1>
-
-      {/* Filters + Actions */}
-      <div
-        style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}
-      >
+      
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         <input
-          placeholder="Tìm theo họ tên / email…"
+          placeholder="Tìm họ tên/email…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           style={{
@@ -131,26 +147,30 @@ export default function Users() {
             </option>
           ))}
         </select>
-
-        <div style={{ marginLeft: "auto" }} />
         <button
           onClick={() => setShowCreate(true)}
           style={{
-            padding: "8px 12px",
+            padding: "8px 16px",
+            background: "#007bff",
+            color: "white",
+            border: "none",
             borderRadius: 8,
-            border: 0,
-            background: "#111",
-            color: "#fff",
+            cursor: "pointer",
           }}
         >
-          + Tạo tài khoản
+          Thêm người dùng
         </button>
-        <div style={{ fontSize: 13, color: "#666", alignSelf: "center" }}>
+        <div style={{ marginLeft: "auto", fontSize: 13, color: "#666" }}>
           Tổng: {total}
         </div>
       </div>
 
-      {/* Table */}
+      {err && (
+        <div style={{ color: "#dc3545", marginBottom: 12, padding: "8px 12px", background: "#f8d7da", borderRadius: 4 }}>
+          {err}
+        </div>
+      )}
+
       <div
         style={{
           background: "#fff",
@@ -168,39 +188,34 @@ export default function Users() {
               <Th>Email</Th>
               <Th>Vai trò</Th>
               <Th>Trạng thái</Th>
+              <Th>Kích hoạt</Th>
               <Th style={{ width: 120 }}>Thao tác</Th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} style={{ padding: 12 }}>
+                <td colSpan={6} style={{ padding: 12 }}>
                   Đang tải…
                 </td>
               </tr>
             )}
             {!loading && items.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ padding: 12, color: "#666" }}>
+                <td colSpan={6} style={{ padding: 12, color: "#666" }}>
                   Không có dữ liệu.
                 </td>
               </tr>
             )}
             {items.map((u) => (
               <tr key={u.id} style={{ borderTop: "1px solid #eee" }}>
-                <Td>
-                  <InlineEdit
-                    text={u.fullName}
-                    onSave={(v) => onInlineChange(u, "fullName", v)}
-                    disabled={savingId === u.id}
-                  />
-                </Td>
+                <Td>{u.fullName}</Td>
                 <Td>{u.email}</Td>
                 <Td>
                   <select
-                    defaultValue={u.role}
-                    onChange={(e) => onInlineChange(u, "role", e.target.value)}
+                    value={u.role}
                     disabled={savingId === u.id}
+                    onChange={(e) => onUpdateUser(u.id, "role", e.target.value)}
                     style={{
                       padding: "6px 10px",
                       border: "1px solid #ddd",
@@ -216,11 +231,9 @@ export default function Users() {
                 </Td>
                 <Td>
                   <select
-                    defaultValue={u.status}
-                    onChange={(e) =>
-                      onInlineChange(u, "status", e.target.value)
-                    }
+                    value={u.status}
                     disabled={savingId === u.id}
+                    onChange={(e) => onUpdateUser(u.id, "status", e.target.value)}
                     style={{
                       padding: "6px 10px",
                       border: "1px solid #ddd",
@@ -235,7 +248,40 @@ export default function Users() {
                   </select>
                 </Td>
                 <Td>
-                  <button onClick={() => onDelete(u.id)} style={btnDanger}>
+                  {u.status !== "ACTIVE" ? (
+                    <button
+                      onClick={() => onSendActivation(u.email)}
+                      disabled={sendingEmail === u.email}
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: 8,
+                        border: "1px solid #ddd",
+                        background: "#fff",
+                        cursor: "pointer",
+                        fontSize: 12,
+                      }}
+                    >
+                      {sendingEmail === u.email
+                        ? "Đang gửi..."
+                        : "Gửi email"}
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "#999" }}>—</span>
+                  )}
+                </Td>
+                <Td>
+                  <button 
+                    onClick={() => onDelete(u.id)} 
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "1px solid #dc3545",
+                      background: "#fff",
+                      color: "#dc3545",
+                      cursor: "pointer",
+                      fontSize: 12,
+                    }}
+                  >
                     Xoá
                   </button>
                 </Td>
@@ -245,10 +291,8 @@ export default function Users() {
         </table>
       </div>
 
-      {err && <div style={{ marginTop: 10, color: "#c53030" }}>{err}</div>}
-
       {showCreate && (
-        <CreateUserDialog
+        <CreateUserModal 
           onClose={() => setShowCreate(false)}
           onCreate={onCreate}
         />
@@ -257,210 +301,127 @@ export default function Users() {
   );
 }
 
-/* Components nhỏ */
-
-function InlineEdit({ text, onSave, disabled }) {
-  const [val, setVal] = useState(text);
-  const [editing, setEditing] = useState(false);
-  return editing ? (
-    <span>
-      <input
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        style={{
-          padding: "6px 8px",
-          border: "1px solid #ddd",
-          borderRadius: 8,
-        }}
-      />
-      <button
-        disabled={disabled}
-        onClick={() => {
-          onSave(val);
-          setEditing(false);
-        }}
-        style={btnSmall}
-      >
-        Lưu
-      </button>
-      <button
-        onClick={() => {
-          setVal(text);
-          setEditing(false);
-        }}
-        style={btnSmallLight}
-      >
-        Huỷ
-      </button>
-    </span>
-  ) : (
-    <span onDoubleClick={() => setEditing(true)}>{text}</span>
-  );
-}
-
-function CreateUserDialog({ onClose, onCreate }) {
+function CreateUserModal({ onClose, onCreate }) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("INTERN");
-  const [status, setStatus] = useState("PENDING");
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState("");
 
-  function validate() {
-    if (!fullName.trim()) return "Vui lòng nhập họ tên";
-    if (!/^\S+@\S+\.\S+$/.test(email)) return "Email không hợp lệ";
-    return "";
-  }
-
-  async function submit(e) {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const v = validate();
-    if (v) {
-      setErr(v);
+    if (!fullName || !email) {
+      alert("Vui lòng điền đầy đủ thông tin");
       return;
     }
-    setSubmitting(true);
-    setErr("");
-    try {
-      await onCreate({ fullName, email, role, status });
-    } catch (_) {
-      // onCreate đã hiển thị alert
-    } finally {
-      setSubmitting(false);
-    }
-  }
+    onCreate({ fullName, email, role });
+  };
 
   return (
-    <div style={modalWrap}>
-      <div style={modalCard}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 8,
-          }}
-        >
-          <h3 style={{ margin: 0 }}>Tạo tài khoản</h3>
-          <button onClick={onClose} style={btnSmallLight}>
-            Đóng
-          </button>
-        </div>
-        <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
-          <label>Họ tên</label>
-          <input
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            style={input}
-          />
-
-          <label>Email</label>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={input}
-            type="email"
-            placeholder="user@company.com"
-          />
-
-          <label>Vai trò</label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            style={input}
-          >
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-
-          <label>Trạng thái</label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            style={input}
-          >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-
-          {err && <div style={{ color: "#c53030", fontSize: 12 }}>{err}</div>}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{ ...btnPrimary, marginTop: 8 }}
-          >
-            {submitting ? "Đang tạo..." : "Tạo tài khoản"}
-          </button>
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1000,
+    }}>
+      <div style={{
+        background: "white",
+        padding: 24,
+        borderRadius: 12,
+        width: 400,
+        maxWidth: "90vw",
+      }}>
+        <h2 style={{ margin: "0 0 16px 0" }}>Thêm người dùng mới</h2>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 4, fontSize: 14 }}>
+              Họ tên
+            </label>
+            <input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+              }}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: "block", marginBottom: 4, fontSize: 14 }}>
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+              }}
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", marginBottom: 4, fontSize: 14 }}>
+              Vai trò
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+              }}
+            >
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "8px 16px",
+                border: "1px solid #ddd",
+                background: "white",
+                borderRadius: 8,
+                cursor: "pointer",
+              }}
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              style={{
+                padding: "8px 16px",
+                border: "none",
+                background: "#007bff",
+                color: "white",
+                borderRadius: 8,
+                cursor: "pointer",
+              }}
+            >
+              Tạo
+            </button>
+          </div>
         </form>
       </div>
     </div>
   );
 }
 
-/* UI helpers */
-const Th = ({ children }) => <th style={{ padding: 12 }}>{children}</th>;
+const Th = ({ children, style }) => <th style={{ padding: 12, ...style }}>{children}</th>;
 const Td = ({ children }) => <td style={{ padding: 12 }}>{children}</td>;
-const input = {
-  padding: "8px 12px",
-  border: "1px solid #ddd",
-  borderRadius: 8,
-};
-const btnPrimary = {
-  padding: "8px 12px",
-  borderRadius: 8,
-  border: 0,
-  background: "#111",
-  color: "#fff",
-  cursor: "pointer",
-};
-const btnDanger = {
-  padding: "6px 10px",
-  borderRadius: 8,
-  border: 0,
-  background: "#fff",
-  color: "#c53030",
-  borderColor: "#f0b3b3",
-  borderStyle: "solid",
-  borderWidth: 1,
-  cursor: "pointer",
-};
-const btnSmall = {
-  padding: "4px 8px",
-  marginLeft: 6,
-  borderRadius: 6,
-  border: 0,
-  background: "#111",
-  color: "#fff",
-  cursor: "pointer",
-};
-const btnSmallLight = {
-  padding: "4px 8px",
-  marginLeft: 6,
-  borderRadius: 6,
-  border: "1px solid #ddd",
-  background: "#fff",
-  color: "#111",
-  cursor: "pointer",
-};
-const modalWrap = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.25)",
-  display: "grid",
-  placeItems: "center",
-  zIndex: 50,
-};
-const modalCard = {
-  width: 420,
-  background: "#fff",
-  borderRadius: 12,
-  padding: 16,
-  boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
-};

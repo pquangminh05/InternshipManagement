@@ -1,4 +1,5 @@
 import api from "./apiClient";
+import { requestActivation } from "./authService"; // 👈 dùng lại service kích hoạt
 
 // BẬT tạm để chạy không cần backend
 const MOCK = true;
@@ -70,7 +71,7 @@ export async function createUser({
     const id = Math.max(0, ...mockUsers.map((u) => u.id)) + 1;
     const user = { id, fullName, email, role, status };
     mockUsers.push(user);
-    return user;
+    return user; // 👈 trả user để FE quyết định có gửi mail ngay không
   }
   const { data } = await api.post("/admin/users", {
     fullName,
@@ -81,7 +82,16 @@ export async function createUser({
   return data;
 }
 
-// UPDATE (đổi role/status/fullName)
+// GỬI EMAIL KÍCH HOẠT (theo email)
+export async function sendActivation(email) {
+  if (MOCK) {
+    await new Promise((r) => setTimeout(r, 300));
+    return { message: "Activation email sent (mock)" };
+  }
+  return requestActivation(email); // POST /auth/activation-request { email }
+}
+
+// UPDATE
 export async function updateUser({ id, fullName, role, status }) {
   if (MOCK) {
     mockUsers = mockUsers.map((u) =>
