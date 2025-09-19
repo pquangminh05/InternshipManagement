@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -79,6 +79,38 @@ export default function Login() {
         >
           Đăng nhập
         </button>
+
+        {/* Divider */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            margin: "16px 0",
+          }}
+        >
+          <div style={{ flex: 1, height: 1, background: "#eee" }} />
+          <span style={{ fontSize: 12, color: "#666" }}>hoặc</span>
+          <div style={{ flex: 1, height: 1, background: "#eee" }} />
+        </div>
+
+        {/* Nút / Link đăng ký kích hoạt */}
+        <Link
+          to="/register"
+          style={{
+            display: "inline-block",
+            width: "100%",
+            textAlign: "center",
+            padding: "10px 12px",
+            border: "1px solid #ddd",
+            borderRadius: 10,
+            background: "#fff",
+            color: "#111",
+            textDecoration: "none",
+          }}
+        >
+          Đăng ký kích hoạt (chưa có mật khẩu)
+        </Link>
       </form>
     </div>
   );
