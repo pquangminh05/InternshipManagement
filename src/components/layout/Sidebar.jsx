@@ -15,41 +15,49 @@ export default function Sidebar({ isOpen, onClose }) {
       label: "Dashboard",
       path: "/",
       icon: "📊",
-      roles: ["ADMIN", "HR", "MENTOR", "INTERN"]
+      roles: ["ADMIN", "HR", "MENTOR", "INTERN"],
     },
     {
       label: "Thực tập",
       path: "/internships",
       icon: "💼",
-      roles: ["ADMIN", "HR"]
+      roles: ["ADMIN", "HR"],
     },
     {
       label: "Sinh viên",
       path: "/students",
       icon: "👨‍🎓",
-      roles: ["ADMIN", "HR"]
+      roles: ["ADMIN", "HR"],
     },
     {
       label: "Công ty",
       path: "/companies",
       icon: "🏢",
-      roles: ["ADMIN", "HR"]
+      roles: ["ADMIN", "HR"],
     },
     {
       label: "Quản lý người dùng",
       path: "/admin/users",
       icon: "👥",
-      roles: ["ADMIN"]
+      roles: ["ADMIN"],
     },
+    // src/components/layout/Sidebar.jsx
+    {
+      label: "Duyệt hồ sơ",
+      path: "/hr/documents",
+      icon: "🗂️",
+      roles: ["HR", "ADMIN"],
+    },
+
     {
       label: "Phân quyền",
       path: "/admin/permissions",
       icon: "🔐",
-      roles: ["ADMIN"]
-    }
+      roles: ["ADMIN"],
+    },
   ];
 
-  const visibleItems = menuItems.filter(item => 
+  const visibleItems = menuItems.filter((item) =>
     item.roles.includes(user?.role)
   );
 
@@ -123,12 +131,12 @@ export default function Sidebar({ isOpen, onClose }) {
             backgroundColor: "#f8f9fa",
           }}
         >
-          <div style={{ fontSize: "14px", fontWeight: "600", marginBottom: "4px" }}>
+          <div
+            style={{ fontSize: "14px", fontWeight: "600", marginBottom: "4px" }}
+          >
             {user?.fullName}
           </div>
-          <div style={{ fontSize: "12px", color: "#666" }}>
-            {user?.role}
-          </div>
+          <div style={{ fontSize: "12px", color: "#666" }}>{user?.role}</div>
         </div>
 
         {/* Navigation Items */}

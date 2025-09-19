@@ -14,6 +14,8 @@ import Permissions from "../pages/admin/Permissions";
 import AppLayout from "../components/layout/Layout"; // 👈 đổi tên import
 import ProtectedRoute from "../components/layout/ProtectedRoute";
 import RoleGuard from "../components/layout/RoleGuard";
+//
+import DocQueue from "../pages/hr/DocQueue";
 
 export default function AppRouter() {
   return (
@@ -66,6 +68,15 @@ export default function AppRouter() {
               element={
                 <RoleGuard roles={["ADMIN"]}>
                   <Permissions />
+                </RoleGuard>
+              }
+            />
+            {/* trong block <Route element={<ProtectedRoute />}><Route element={<AppLayout />} */}
+            <Route
+              path="/hr/documents"
+              element={
+                <RoleGuard roles={["HR", "ADMIN"]}>
+                  <DocQueue />
                 </RoleGuard>
               }
             />

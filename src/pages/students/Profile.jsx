@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getMyProfile, getMyDocuments } from "../../services/profileService";
 import StatusBadge from "../../components/common/StatusBadge";
+import { uploadMyDoc, getMyDocs } from "../../services/documentService"; // bỏ/giữ getMyDocs tùy bạn
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
@@ -153,4 +154,89 @@ function labelOf(t) {
     OTHER: "Khác",
   };
   return map[t] || t;
+}
+function UploadBox({ onUploaded }) {
+  const [type, setType] = useState("CV");
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    setMsg("");
+    setErr("");
+    if (!file) {
+      setErr("Vui lòng chọn file");
+      return;
+    }
+    setLoading(true);
+    try {
+      await uploadMyDoc({ type, file });
+      setMsg("Đã tải lên, chờ HR duyệt.");
+      setFile(null);
+      onUploaded && onUploaded();
+    } catch (e) {
+      setErr("Tải lên thất bại");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: 12,
+        padding: 16,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+        marginTop: 16,
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: 8 }}>Nộp tài liệu</div>
+      <form
+        onSubmit={onSubmit}
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          style={{
+            padding: "8px 12px",
+            border: "1px solid #ddd",
+            borderRadius: 8,
+          }}
+        >
+          <option value="CV">CV</option>
+          <option value="APPLICATION">Đơn xin thực tập</option>
+          <option value="CONTRACT">Hợp đồng</option>
+          <option value="OTHER">Khác</option>
+        </select>
+        <input
+          type="file"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+        />
+        <button
+          disabled={loading}
+          style={{
+            padding: "8px 14px",
+            borderRadius: 8,
+            border: 0,
+            background: "#111",
+            color: "#fff",
+          }}
+        >
+          {loading ? "Đang tải..." : "Tải lên"}
+        </button>
+        {msg && <span style={{ color: "#1a7f37", fontSize: 12 }}>{msg}</span>}
+        {err && <span style={{ color: "#c53030", fontSize: 12 }}>{err}</span>}
+      </form>
+      <UploadBox onUploaded={() => getMyDocuments().then(setDocs)} />
+    </div>
+  );
 }
