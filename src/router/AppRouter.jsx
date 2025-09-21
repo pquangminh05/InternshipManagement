@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Pages
 import Login from "../pages/auth/Login";
-import Register from "../pages/auth/Register";
 import Dashboard from "../pages/dashboard/Index";
 import InternshipList from "../pages/internships/InternshipList";
 import StudentList from "../pages/students/StudentList";
@@ -23,7 +22,6 @@ export default function AppRouter() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
 
         {/* Private */}
         <Route element={<ProtectedRoute />}>

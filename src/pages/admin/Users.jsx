@@ -4,7 +4,6 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  sendActivation,
 } from "../../services/adminService";
 
 const ROLES = ["ADMIN", "HR", "MENTOR", "INTERN"];
@@ -18,7 +17,6 @@ export default function Users() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
-  const [sendingEmail, setSendingEmail] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [err, setErr] = useState("");
 
@@ -60,30 +58,11 @@ export default function Users() {
   async function onCreate(data) {
     try {
       const user = await createUser(data);
-      if (
-        confirm("Tạo thành công. Gửi email kích hoạt cho người dùng này ngay?")
-      ) {
-        setSendingEmail(user.email);
-        await sendActivation(user.email);
-        setSendingEmail(null);
-        alert("Đã gửi email kích hoạt.");
-      }
+      alert("Tạo thành công.");
       setShowCreate(false);
       await load();
     } catch (e) {
       alert(e?.response?.data?.message || "Tạo tài khoản thất bại");
-    }
-  }
-
-  async function onSendActivation(email) {
-    try {
-      setSendingEmail(email);
-      await sendActivation(email);
-      alert("Đã gửi email kích hoạt.");
-    } catch (e) {
-      alert(e?.response?.data?.message || "Gửi email thất bại");
-    } finally {
-      setSendingEmail(null);
     }
   }
 
@@ -188,21 +167,20 @@ export default function Users() {
               <Th>Email</Th>
               <Th>Vai trò</Th>
               <Th>Trạng thái</Th>
-              <Th>Kích hoạt</Th>
               <Th style={{ width: 120 }}>Thao tác</Th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={6} style={{ padding: 12 }}>
+                <td colSpan={5} style={{ padding: 12 }}>
                   Đang tải…
                 </td>
               </tr>
             )}
             {!loading && items.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ padding: 12, color: "#666" }}>
+                <td colSpan={5} style={{ padding: 12, color: "#666" }}>
                   Không có dữ liệu.
                 </td>
               </tr>
@@ -246,28 +224,6 @@ export default function Users() {
                       </option>
                     ))}
                   </select>
-                </Td>
-                <Td>
-                  {u.status !== "ACTIVE" ? (
-                    <button
-                      onClick={() => onSendActivation(u.email)}
-                      disabled={sendingEmail === u.email}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 8,
-                        border: "1px solid #ddd",
-                        background: "#fff",
-                        cursor: "pointer",
-                        fontSize: 12,
-                      }}
-                    >
-                      {sendingEmail === u.email
-                        ? "Đang gửi..."
-                        : "Gửi email"}
-                    </button>
-                  ) : (
-                    <span style={{ fontSize: 12, color: "#999" }}>—</span>
-                  )}
                 </Td>
                 <Td>
                   <button 

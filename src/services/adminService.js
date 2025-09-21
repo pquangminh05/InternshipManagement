@@ -1,5 +1,4 @@
 import api from "./apiClient";
-import { requestActivation } from "./authService"; // 👈 dùng lại service kích hoạt
 
 // BẬT tạm để chạy không cần backend
 const MOCK = true;
@@ -80,15 +79,6 @@ export async function createUser({
     status,
   });
   return data;
-}
-
-// GỬI EMAIL KÍCH HOẠT (theo email)
-export async function sendActivation(email) {
-  if (MOCK) {
-    await new Promise((r) => setTimeout(r, 300));
-    return { message: "Activation email sent (mock)" };
-  }
-  return requestActivation(email); // POST /auth/activation-request { email }
 }
 
 // UPDATE

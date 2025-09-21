@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 
 // Mock users for testing
@@ -172,9 +172,6 @@ export default function Login() {
         >
           {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
-        <div style={{ marginTop: 12, fontSize: 12 }}>
-          Chưa có mật khẩu? <Link to="/register">Đăng ký kích hoạt</Link>
-        </div>
       </form>
     </div>
   );
